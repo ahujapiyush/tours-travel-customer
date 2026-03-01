@@ -1,20 +1,17 @@
 import { Platform } from 'react-native';
 
 export const API_BASE_URL = Platform.select({
-  web: 'http://localhost:5001/api',
-  ios: 'http://192.168.31.133:5001/api',
-  default: 'http://10.0.2.2:5001/api', // Android emulator
+  web: 'https://tours-travel-backend.vercel.app/api',
+  ios: 'https://tours-travel-backend.vercel.app/api',
+  default: 'https://tours-travel-backend.vercel.app/api',
 });
 
-// ── After deploying to Vercel, replace all values above with: ──
-// export const API_BASE_URL = 'https://YOUR-APP.vercel.app/api';
+// ── For local development swap to: ──
+// web: 'http://localhost:5001/api',
+// ios: 'http://192.168.31.133:5001/api',
+// default: 'http://10.0.2.2:5001/api',
 
-export const SOCKET_URL = Platform.select({
-  web: 'http://localhost:5001',
-  ios: 'http://192.168.31.133:5001',
-  default: 'http://10.0.2.2:5001',
-});
-// After Vercel deploy: export const SOCKET_URL = 'https://YOUR-APP.vercel.app';
+export const SOCKET_URL = 'https://tours-travel-backend.vercel.app';
 
 export const GOOGLE_MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY';
 
