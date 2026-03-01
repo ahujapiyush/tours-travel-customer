@@ -23,14 +23,9 @@ export default function BookCarScreen({ navigation, route }) {
   const [loading, setLoading] = useState(false);
   const [couponLoading, setCouponLoading] = useState(false);
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!user) {
-      showAlert('Login Required', 'Please sign in to book a car', [
-        { text: 'OK', onPress: () => navigation.navigate('Login') },
-      ]);
-    }
-  }, [user]);
+  // Guest details (when not logged in)
+  const [guestPhone, setGuestPhone] = useState('');
+  const [guestName, setGuestName] = useState('');
 
   const [form, setForm] = useState({
     pickup_address: '',
@@ -107,6 +102,15 @@ export default function BookCarScreen({ navigation, route }) {
   };
 
   const handleBook = async () => {
+    // Guest validation
+    if (!user) {
+      const phone = guestPhone.replace(/\D/g, '').slice(-10);
+      if (phone.length < 10) {
+        showAlert('Phone Required', 'Please enter a valid 10-digit phone number to continue');
+        return;
+      }
+    }
+
     if (!form.pickup_address || !form.drop_address || !form.pickup_date || !form.pickup_time) {
       showAlert('Required', 'Please fill pickup address, drop address, date and time');
       return;
@@ -134,7 +138,7 @@ export default function BookCarScreen({ navigation, route }) {
             setLoading(true);
             try {
               const fare = estimatedFare();
-              const payload = {
+              const basePayload = {
                 car_id: car.id,
                 pickup_address: form.pickup_address,
                 drop_address: form.drop_address,
@@ -146,10 +150,22 @@ export default function BookCarScreen({ navigation, route }) {
                 coupon_code: couponApplied ? form.coupon_code : null,
                 total_amount: Math.round(fare.total),
               };
-              const { data } = await bookingsAPI.createBooking(payload);
-              const newBooking = data?.booking || data;
+
+              let newBooking;
+              if (user) {
+                const { data } = await bookingsAPI.createBooking(basePayload);
+                newBooking = data?.booking || data;
+              } else {
+                const { data } = await bookingsAPI.createGuestBooking({
+                  ...basePayload,
+                  phone: guestPhone.replace(/\D/g, '').slice(-10),
+                  name: guestName.trim() || undefined,
+                });
+                newBooking = data?.booking || data;
+              }
+
               showAlert('Booking Successful!', `Booking #${newBooking.id} created successfully`, [
-                { text: 'View Booking', onPress: () => navigation.replace('BookingDetail', { bookingId: newBooking.id }) },
+                { text: 'OK', onPress: () => navigation.goBack() },
               ]);
             } catch (err) {
               showAlert('Error', err.response?.data?.message || 'Failed to create booking');
@@ -180,6 +196,57 @@ export default function BookCarScreen({ navigation, route }) {
             <Text style={styles.carPrice}>₹{car.price_per_km}/km</Text>
           </View>
         </View>
+
+        {/* Guest Details — shown only when not logged in */}
+        {!user && (
+          <View style={styles.card}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <Ionicons name="person-circle-outline" size={20} color={COLORS.accent} />
+              <Text style={styles.sectionTitle}>Your Contact Details</Text>
+            </View>
+            <Text style={{ fontSize: SIZES.sm, color: COLORS.textSecondary, marginBottom: 14 }}>
+              No account needed — we'll track your booking by phone number.
+            </Text>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Phone Number *</Text>
+              <View style={styles.inputRow}>
+                <Ionicons name="call" size={15} color={COLORS.accent} style={{ marginRight: 8 }} />
+                <TextInput
+                  style={styles.inputFlex}
+                  value={guestPhone}
+                  onChangeText={setGuestPhone}
+                  placeholder="10-digit mobile number"
+                  placeholderTextColor={COLORS.textLight}
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                />
+              </View>
+            </View>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Your Name (Optional)</Text>
+              <View style={styles.inputRow}>
+                <Ionicons name="person" size={15} color={COLORS.accent} style={{ marginRight: 8 }} />
+                <TextInput
+                  style={styles.inputFlex}
+                  value={guestName}
+                  onChangeText={setGuestName}
+                  placeholder="Enter your name"
+                  placeholderTextColor={COLORS.textLight}
+                />
+              </View>
+            </View>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Login')}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="log-in-outline" size={14} color={COLORS.accent} />
+              <Text style={{ fontSize: SIZES.sm, color: COLORS.accent, fontWeight: '500' }}>
+                Sign in for full booking history & tracking
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Pickup Details */}
         <View style={styles.card}>

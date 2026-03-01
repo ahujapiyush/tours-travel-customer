@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Platform, RefreshControl, Image, Dimensions,
+  ActivityIndicator, Platform, RefreshControl, Image, Dimensions, useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Dropdown } from 'react-native-element-dropdown';
@@ -22,6 +22,7 @@ const CHHATTISGARH_CITIES = [
 
 export default function HomeScreen({ navigation }) {
   const { user } = useAuth();
+  const { width: winWidth } = useWindowDimensions();
   const filtersInitialized = useRef(false);
 
   const [states, setStates] = useState([]);
@@ -299,10 +300,19 @@ export default function HomeScreen({ navigation }) {
             </View>
           ) : (
             <View style={styles.carsGrid}>
-              {popularCars.map(car => (
+              {popularCars.map(car => {
+                // Responsive card width: mobile web → 2 cols, tablet → 3, desktop → 4
+                const cols = isWeb
+                  ? winWidth < 500 ? 2 : winWidth < 720 ? 3 : 4
+                  : 2;
+                const gap = isWeb ? 16 : 10;
+                const cardWidth = isWeb
+                  ? `calc(${100 / cols}% - ${gap * (cols - 1) / cols}px)`
+                  : '48.5%';
+                return (
                 <TouchableOpacity
                   key={car.id}
-                  style={styles.carCard}
+                  style={[styles.carCard, { width: cardWidth }]}
                   onPress={() => navigation.navigate('CarDetail', { carId: car.id })}
                   activeOpacity={0.7}
                 >
@@ -347,7 +357,8 @@ export default function HomeScreen({ navigation }) {
                     </View>
                   </View>
                 </TouchableOpacity>
-              ))}
+                );
+              })}
             </View>
           )}
         </View>
@@ -378,22 +389,23 @@ function CarImageArea({ car }) {
   }
 
   // Multiple images → carousel
+  const [slideWidth, setSlideWidth] = useState(0);
   return (
-    <View style={styles.carImageWrap}>
-      <ScrollView
+    <View style={styles.carImageWrap} onLayout={(e) => setSlideWidth(e.nativeEvent.layout.width)}>
+      {slideWidth > 0 && <ScrollView
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={(e) => {
-          const idx = Math.round(e.nativeEvent.contentOffset.x / e.nativeEvent.layoutMeasurement.width);
+          const idx = Math.round(e.nativeEvent.contentOffset.x / slideWidth);
           setActiveIdx(idx);
         }}
         style={styles.carImageScroll}
       >
         {allImages.map((uri, i) => (
-          <Image key={i} source={{ uri }} style={styles.carImageSlide} resizeMode="cover" />
+          <Image key={i} source={{ uri }} style={[styles.carImageSlide, { width: slideWidth }]} resizeMode="cover" />
         ))}
-      </ScrollView>
+      </ScrollView>}
       <View style={styles.dotRow}>
         {allImages.map((_, i) => (
           <View key={i} style={[styles.dot, i === activeIdx && styles.dotActive]} />
@@ -405,9 +417,10 @@ function CarImageArea({ car }) {
 
 function getCarImages(car) {
   const imgs = [];
-  if (car.image_url) imgs.push(car.image_url);
+  const isValid = (url) => typeof url === 'string' && url.startsWith('http');
+  if (isValid(car.image_url)) imgs.push(car.image_url);
   if (Array.isArray(car.images)) {
-    car.images.forEach(url => { if (url && !imgs.includes(url)) imgs.push(url); });
+    car.images.forEach(url => { if (isValid(url) && !imgs.includes(url)) imgs.push(url); });
   }
   return imgs;
 }
@@ -555,7 +568,6 @@ const styles = StyleSheet.create({
   carsLoader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 30 },
   carsLoaderText: { fontSize: SIZES.sm, color: COLORS.textSecondary },
   carCard: {
-    width: isWeb ? 'calc(25% - 12px)' : '48.5%',
     backgroundColor: COLORS.surface, borderRadius: SIZES.radiusLg,
     overflow: 'hidden', borderWidth: 1, borderColor: COLORS.divider,
     ...(isWeb ? { cursor: 'pointer' } : {}),

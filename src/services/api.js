@@ -60,6 +60,7 @@ export const carsAPI = {
 // Bookings API
 export const bookingsAPI = {
   createBooking: (data) => api.post('/bookings', data),
+  createGuestBooking: (data) => api.post('/bookings/guest', data),
   getBookings: (params) => api.get('/bookings', { params }),
   getBookingById: (id) => api.get(`/bookings/${id}`),
   cancelBooking: (id, data) => api.put(`/bookings/${id}/cancel`, data),

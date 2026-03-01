@@ -1,9 +1,9 @@
 import { Platform } from 'react-native';
 
 export const API_BASE_URL = Platform.select({
-  web: 'https://backend-psi-two-85.vercel.app/api',
-  ios: 'https://backend-psi-two-85.vercel.app/api',
-  default: 'https://backend-psi-two-85.vercel.app/api',
+  web: 'https://tours-travel-backend-eosin.vercel.app/api',
+  ios: 'https://tours-travel-backend-eosin.vercel.app/api',
+  default: 'https://tours-travel-backend-eosin.vercel.app/api',
 });
 
 // ── For local development swap to: ──
@@ -11,7 +11,7 @@ export const API_BASE_URL = Platform.select({
 // ios: 'http://192.168.31.133:5001/api',
 // default: 'http://10.0.2.2:5001/api',
 
-export const SOCKET_URL = 'https://backend-psi-two-85.vercel.app';
+export const SOCKET_URL = 'https://tours-travel-backend-eosin.vercel.app';
 
 export const GOOGLE_MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY';
 

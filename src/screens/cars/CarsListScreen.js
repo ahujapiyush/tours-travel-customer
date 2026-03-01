@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput,
-  ActivityIndicator, RefreshControl, Platform, ScrollView,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Image,
+  ActivityIndicator, RefreshControl, Platform, ScrollView, useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, SHADOWS } from '../../constants/theme';
@@ -10,6 +10,7 @@ import { carsAPI } from '../../services/api';
 
 export default function CarsListScreen({ navigation, route }) {
   const { stateId, cityId, categoryId, cityName } = route.params || {};
+  const { width: winWidth } = useWindowDimensions();
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -57,7 +58,17 @@ export default function CarsListScreen({ navigation, route }) {
     >
       {/* Car Image Area */}
       <View style={styles.carImageWrap}>
-        <Ionicons name="car-sport" size={36} color={COLORS.accent} />
+        {(() => {
+          const isValid = (url) => typeof url === 'string' && url.startsWith('http');
+          const imgUrl = isValid(item.image_url) ? item.image_url
+            : (Array.isArray(item.images) && isValid(item.images[0])) ? item.images[0]
+            : null;
+          return imgUrl ? (
+            <Image source={{ uri: imgUrl }} style={styles.carImage} resizeMode="cover" />
+          ) : (
+            <Ionicons name="car-sport" size={36} color={COLORS.accent} />
+          );
+        })()}
         {item.ac && (
           <View style={styles.acBadge}>
             <Ionicons name="snow" size={12} color={COLORS.info} />
@@ -151,15 +162,20 @@ export default function CarsListScreen({ navigation, route }) {
               <Text style={styles.emptyText}>No cars found</Text>
               <Text style={styles.emptySubtext}>Try adjusting your search or filters</Text>
             </View>
-          ) : (
-            <View style={styles.carsGrid}>
-              {cars.map(item => (
-                <View key={item.id} style={styles.gridItem}>
-                  {renderCar({ item })}
-                </View>
-              ))}
-            </View>
-          )}
+          ) : (() => {
+            const cols = winWidth < 500 ? 1 : winWidth < 800 ? 2 : 3;
+            const gap = 12;
+            const cardWidth = cols === 1 ? '100%' : `calc(${100 / cols}% - ${(gap * (cols - 1)) / cols}px)`;
+            return (
+              <View style={[styles.carsGrid, { gap }]}>
+                {cars.map(item => (
+                  <View key={item.id} style={[styles.gridItem, { width: cardWidth }]}>
+                    {renderCar({ item })}
+                  </View>
+                ))}
+              </View>
+            );
+          })()}
         </ScrollView>
       ) : (
         <FlatList
@@ -213,10 +229,10 @@ const styles = StyleSheet.create({
   filterText: { fontSize: SIZES.sm, color: COLORS.accent, fontWeight: '500' },
   carsGrid: {
     flexDirection: 'row', flexWrap: 'wrap',
-    gap: 16,
+    gap: 12,
   },
   gridItem: {
-    width: isWeb ? 'calc(33.333% - 11px)' : '100%',
+    width: '100%',
   },
   carCard: {
     backgroundColor: COLORS.surface, borderRadius: SIZES.radiusLg,
@@ -226,6 +242,7 @@ const styles = StyleSheet.create({
     height: 110, backgroundColor: COLORS.accentLight, justifyContent: 'center',
     alignItems: 'center', position: 'relative',
   },
+  carImage: { width: '100%', height: '100%' },
   acBadge: {
     position: 'absolute', top: 10, right: 10, flexDirection: 'row', alignItems: 'center',
     gap: 4, backgroundColor: COLORS.info + '15', paddingHorizontal: 8, paddingVertical: 4,

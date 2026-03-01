@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Platform,
+  ActivityIndicator, Platform, Image, Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -55,15 +55,8 @@ export default function CarDetailScreen({ navigation, route }) {
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
-        {/* Hero */}
-        <View style={[styles.hero, Platform.OS !== 'web' && { paddingTop: insets.top }]}>
-          <View style={styles.heroIconWrap}>
-            <Ionicons name="car-sport" size={40} color={COLORS.accent} />
-          </View>
-          <TouchableOpacity style={styles.favBtn} onPress={toggleFavorite}>
-            <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color={isFavorite ? COLORS.danger : COLORS.textLight} />
-          </TouchableOpacity>
-        </View>
+        {/* Hero with Car Image */}
+        <CarHeroImage car={car} isFavorite={isFavorite} toggleFavorite={toggleFavorite} />
 
         <View style={styles.content}>
           {/* Title */}
@@ -151,16 +144,7 @@ export default function CarDetailScreen({ navigation, route }) {
         </View>
         <TouchableOpacity
           style={styles.bookBtn}
-          onPress={() => {
-            if (!user) {
-              showAlert('Login Required', 'Please sign in to book a car', [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Sign In', onPress: () => navigation.navigate('Login') },
-              ]);
-              return;
-            }
-            navigation.navigate('BookCar', { car });
-          }}
+          onPress={() => navigation.navigate('BookCar', { car })}
           activeOpacity={0.85}
         >
           <Text style={styles.bookBtnText}>Book This Car</Text>
@@ -183,12 +167,84 @@ function SpecItem({ icon, label, value }) {
   );
 }
 
+function CarHeroImage({ car, isFavorite, toggleFavorite }) {
+  const isValid = (url) => typeof url === 'string' && url.startsWith('http');
+  const allImages = [];
+  if (isValid(car.image_url)) allImages.push(car.image_url);
+  if (Array.isArray(car.images)) {
+    car.images.forEach(url => { if (isValid(url) && !allImages.includes(url)) allImages.push(url); });
+  }
+
+  const [activeIdx, setActiveIdx] = React.useState(0);
+  const [slideWidth, setSlideWidth] = React.useState(Dimensions.get('window').width);
+
+  const favButton = (
+    <TouchableOpacity style={styles.favBtn} onPress={toggleFavorite}>
+      <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color={isFavorite ? COLORS.danger : COLORS.textLight} />
+    </TouchableOpacity>
+  );
+
+  if (allImages.length === 0) {
+    return (
+      <View style={[styles.hero, Platform.OS !== 'web' && { paddingTop: 40 }]}>
+        <View style={styles.heroIconWrap}>
+          <Ionicons name="car-sport" size={40} color={COLORS.accent} />
+        </View>
+        {favButton}
+      </View>
+    );
+  }
+
+  if (allImages.length === 1) {
+    return (
+      <View style={styles.heroImageWrap}>
+        <Image source={{ uri: allImages[0] }} style={styles.heroImage} resizeMode="cover" />
+        {favButton}
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.heroImageWrap} onLayout={(e) => setSlideWidth(e.nativeEvent.layout.width)}>
+      <ScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={(e) => {
+          const idx = Math.round(e.nativeEvent.contentOffset.x / slideWidth);
+          setActiveIdx(idx);
+        }}
+      >
+        {allImages.map((uri, i) => (
+          <Image key={i} source={{ uri }} style={[styles.heroImage, { width: slideWidth }]} resizeMode="cover" />
+        ))}
+      </ScrollView>
+      <View style={styles.heroDotRow}>
+        {allImages.map((_, i) => (
+          <View key={i} style={[styles.heroDot, i === activeIdx && styles.heroDotActive]} />
+        ))}
+      </View>
+      {favButton}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   hero: {
     height: 180, backgroundColor: COLORS.accentLight, justifyContent: 'center',
     alignItems: 'center', position: 'relative',
   },
+  heroImageWrap: {
+    height: 240, position: 'relative', backgroundColor: COLORS.accentLight, overflow: 'hidden',
+  },
+  heroImage: { width: '100%', height: 240 },
+  heroDotRow: {
+    position: 'absolute', bottom: 10, left: 0, right: 0,
+    flexDirection: 'row', justifyContent: 'center', gap: 4,
+  },
+  heroDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.5)' },
+  heroDotActive: { backgroundColor: '#FFF', width: 16 },
   heroIconWrap: {
     width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.surface,
     justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: COLORS.divider,

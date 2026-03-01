@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { Platform, View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking } from 'react-native';
+import { Platform, View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, useWindowDimensions } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -477,7 +477,7 @@ function ContactFloatingButton() {
   const [expanded, setExpanded] = useState(false);
   return (
     <View style={{
-      position: 'fixed', bottom: 24, right: 24, zIndex: 999, alignItems: 'flex-end',
+      position: 'fixed', bottom: 100, right: 24, zIndex: 999, alignItems: 'flex-end',
     }}>
       {expanded && (
         <View style={{
@@ -535,71 +535,138 @@ function ContactFloatingButton() {
 function WebTopNav({ activeTab, onNavigate }) {
   const { user, logout } = useAuth();
   const nav = user ? NAV_AUTH : NAV_GUEST;
+  const { width } = useWindowDimensions();
+  const isMobile = width < 640;
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <View style={w.topBar}>
-      <View style={w.topInner}>
+      <View style={[w.topInner, isMobile && { paddingHorizontal: 16 }]}>
         {/* Logo */}
-        <TouchableOpacity style={w.logo} onPress={() => onNavigate('Home')} activeOpacity={0.7}>
+        <TouchableOpacity style={w.logo} onPress={() => { onNavigate('Home'); setMenuOpen(false); }} activeOpacity={0.7}>
           <View style={w.logoIcon}>
             <Ionicons name="car-sport" size={18} color={C.surface} />
           </View>
-          <Text style={w.logoText}>Tours & Travel</Text>
+          {!isMobile && <Text style={w.logoText}>Tours & Travel</Text>}
+          {isMobile && <Text style={[w.logoText, { fontSize: 14 }]}>Tours & Travel</Text>}
         </TouchableOpacity>
 
-        {/* Nav Links */}
-        <View style={w.navLinks}>
-          {nav.slice(0, 4).map(item => {
-            const active = activeTab === item.key;
-            return (
-              <TouchableOpacity
-                key={item.key}
-                style={w.navLink}
-                onPress={() => onNavigate(item.key)}
-                activeOpacity={0.7}
-              >
-                <Text style={[w.navLinkText, active && w.navLinkActive]}>
-                  {item.label}
-                </Text>
-                {active && <View style={w.navIndicator} />}
-              </TouchableOpacity>
-            );
-          })}
-          <TouchableOpacity style={w.navLink} onPress={() => onNavigate('Blogs')} activeOpacity={0.7}>
-            <Text style={w.navLinkText}>Blogs</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Nav Links — desktop only */}
+        {!isMobile && (
+          <View style={w.navLinks}>
+            {nav.slice(0, 4).map(item => {
+              const active = activeTab === item.key;
+              return (
+                <TouchableOpacity key={item.key} style={w.navLink} onPress={() => onNavigate(item.key)} activeOpacity={0.7}>
+                  <Text style={[w.navLinkText, active && w.navLinkActive]}>{item.label}</Text>
+                  {active && <View style={w.navIndicator} />}
+                </TouchableOpacity>
+              );
+            })}
+            <TouchableOpacity style={w.navLink} onPress={() => onNavigate('Blogs')} activeOpacity={0.7}>
+              <Text style={w.navLinkText}>Blogs</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-        {/* Right */}
-        <View style={w.navRight}>
-          {user ? (
-            <>
-              <TouchableOpacity style={w.iconBtn} onPress={() => onNavigate('Notifications')}>
-                <Ionicons name="notifications-outline" size={18} color={C.textSec} />
+        {/* Spacer on mobile */}
+        {isMobile && <View style={{ flex: 1 }} />}
+
+        {/* Right — desktop */}
+        {!isMobile && (
+          <View style={w.navRight}>
+            {user ? (
+              <>
+                <TouchableOpacity style={w.iconBtn} onPress={() => onNavigate('Notifications')}>
+                  <Ionicons name="notifications-outline" size={18} color={C.textSec} />
+                </TouchableOpacity>
+                <TouchableOpacity style={w.profileChip} onPress={() => onNavigate('Profile')} activeOpacity={0.7}>
+                  <View style={w.avatar}>
+                    <Text style={w.avatarText}>{user?.name?.charAt(0)?.toUpperCase() || 'U'}</Text>
+                  </View>
+                  <Text style={w.profileName}>{user?.name?.split(' ')[0] || 'User'}</Text>
+                  <Ionicons name="chevron-down" size={14} color={C.textMuted} />
+                </TouchableOpacity>
+                <TouchableOpacity style={w.logoutBtn} onPress={logout} activeOpacity={0.7}>
+                  <Ionicons name="log-out-outline" size={16} color={C.danger} />
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <TouchableOpacity style={w.signInBtn} onPress={() => onNavigate('Login')} activeOpacity={0.7}>
+                  <Text style={w.signInText}>Sign In</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={w.signUpBtn} onPress={() => onNavigate('Register')} activeOpacity={0.7}>
+                  <Text style={w.signUpText}>Get Started</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        )}
+
+        {/* Right — mobile: Sign In button + hamburger */}
+        {isMobile && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {!user && (
+              <TouchableOpacity style={[w.signInBtn, { paddingHorizontal: 12, paddingVertical: 6 }]} onPress={() => { onNavigate('Login'); setMenuOpen(false); }} activeOpacity={0.7}>
+                <Text style={[w.signInText, { fontSize: 12 }]}>Sign In</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={w.profileChip} onPress={() => onNavigate('Profile')} activeOpacity={0.7}>
-                <View style={w.avatar}>
-                  <Text style={w.avatarText}>{user?.name?.charAt(0)?.toUpperCase() || 'U'}</Text>
-                </View>
-                <Text style={w.profileName}>{user?.name?.split(' ')[0] || 'User'}</Text>
-                <Ionicons name="chevron-down" size={14} color={C.textMuted} />
-              </TouchableOpacity>
-              <TouchableOpacity style={w.logoutBtn} onPress={logout} activeOpacity={0.7}>
-                <Ionicons name="log-out-outline" size={16} color={C.danger} />
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <TouchableOpacity style={w.signInBtn} onPress={() => onNavigate('Login')} activeOpacity={0.7}>
-                <Text style={w.signInText}>Sign In</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={w.signUpBtn} onPress={() => onNavigate('Register')} activeOpacity={0.7}>
-                <Text style={w.signUpText}>Get Started</Text>
-              </TouchableOpacity>
-            </>
+            )}
+            {user && (
+              <View style={w.avatar}>
+                <Text style={w.avatarText}>{user?.name?.charAt(0)?.toUpperCase() || 'U'}</Text>
+              </View>
+            )}
+            <TouchableOpacity
+              style={{ width: 36, height: 36, justifyContent: 'center', alignItems: 'center' }}
+              onPress={() => setMenuOpen(o => !o)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name={menuOpen ? 'close' : 'menu'} size={24} color={C.text} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
+      {/* Mobile dropdown menu */}
+      {isMobile && menuOpen && (
+        <View style={{
+          backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.border,
+          paddingHorizontal: 16, paddingBottom: 12,
+        }}>
+          {nav.map(item => (
+            <TouchableOpacity
+              key={item.key}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.border }}
+              onPress={() => { onNavigate(item.key); setMenuOpen(false); }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name={item.icon + '-outline'} size={18} color={activeTab === item.key ? C.primary : C.textMuted} />
+              <Text style={{ fontSize: 15, fontWeight: activeTab === item.key ? '600' : '400', color: activeTab === item.key ? C.text : C.textSec }}>
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.border }}
+            onPress={() => { onNavigate('Blogs'); setMenuOpen(false); }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="newspaper-outline" size={18} color={C.textMuted} />
+            <Text style={{ fontSize: 15, color: C.textSec }}>Blogs</Text>
+          </TouchableOpacity>
+          {user && (
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }}
+              onPress={() => { logout(); setMenuOpen(false); }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="log-out-outline" size={18} color={C.danger} />
+              <Text style={{ fontSize: 15, color: C.danger }}>Sign Out</Text>
+            </TouchableOpacity>
           )}
         </View>
-      </View>
+      )}
     </View>
   );
 }

@@ -50,13 +50,19 @@ export default function FavoritesScreen({ navigation }) {
       onPress={() => navigation.navigate('CarDetail', { carId: item.id })}
     >
       <View style={styles.cardImage}>
-        {item.image_url ? (
-          <Image source={{ uri: item.image_url }} style={styles.image} resizeMode="cover" />
-        ) : (
-          <View style={styles.imagePlaceholder}>
-            <Ionicons name="car-sport" size={36} color={COLORS.accent + '66'} />
-          </View>
-        )}
+        {(() => {
+          const isValid = (url) => typeof url === 'string' && url.startsWith('http');
+          const imgUrl = isValid(item.image_url) ? item.image_url
+            : (Array.isArray(item.images) && isValid(item.images[0])) ? item.images[0]
+            : null;
+          return imgUrl ? (
+            <Image source={{ uri: imgUrl }} style={styles.image} resizeMode="cover" />
+          ) : (
+            <View style={styles.imagePlaceholder}>
+              <Ionicons name="car-sport" size={36} color={COLORS.accent + '66'} />
+            </View>
+          );
+        })()}
         <TouchableOpacity
           style={styles.heartBtn}
           onPress={() => removeFavorite(item.id)}
