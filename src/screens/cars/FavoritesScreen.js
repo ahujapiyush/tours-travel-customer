@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface, borderRadius: SIZES.radiusLg,
     marginBottom: 16, overflow: 'hidden', borderWidth: 1, borderColor: COLORS.divider,
   },
-  cardImage: { height: 180, position: 'relative' },
+  cardImage: { aspectRatio: 4 / 3, position: 'relative' },
   image: { width: '100%', height: '100%' },
   imagePlaceholder: {
     width: '100%', height: '100%', backgroundColor: COLORS.accentLight,

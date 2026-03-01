@@ -176,7 +176,12 @@ function CarHeroImage({ car, isFavorite, toggleFavorite }) {
   }
 
   const [activeIdx, setActiveIdx] = React.useState(0);
-  const [slideWidth, setSlideWidth] = React.useState(Dimensions.get('window').width);
+  const [layout, setLayout] = React.useState({ width: Dimensions.get('window').width, height: Math.round(Dimensions.get('window').width * 3 / 4) });
+
+  const onLayout = (e) => {
+    const { width, height } = e.nativeEvent.layout;
+    if (width > 0 && height > 0) setLayout({ width, height });
+  };
 
   const favButton = (
     <TouchableOpacity style={styles.favBtn} onPress={toggleFavorite}>
@@ -198,25 +203,25 @@ function CarHeroImage({ car, isFavorite, toggleFavorite }) {
   if (allImages.length === 1) {
     return (
       <View style={styles.heroImageWrap}>
-        <Image source={{ uri: allImages[0] }} style={styles.heroImage} resizeMode="cover" />
+        <Image source={{ uri: allImages[0] }} style={styles.heroImage} resizeMode="contain" />
         {favButton}
       </View>
     );
   }
 
   return (
-    <View style={styles.heroImageWrap} onLayout={(e) => setSlideWidth(e.nativeEvent.layout.width)}>
+    <View style={styles.heroImageWrap} onLayout={onLayout}>
       <ScrollView
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={(e) => {
-          const idx = Math.round(e.nativeEvent.contentOffset.x / slideWidth);
+          const idx = Math.round(e.nativeEvent.contentOffset.x / layout.width);
           setActiveIdx(idx);
         }}
       >
         {allImages.map((uri, i) => (
-          <Image key={i} source={{ uri }} style={[styles.heroImage, { width: slideWidth }]} resizeMode="cover" />
+          <Image key={i} source={{ uri }} style={{ width: layout.width, height: layout.height }} resizeMode="contain" />
         ))}
       </ScrollView>
       <View style={styles.heroDotRow}>
@@ -236,9 +241,9 @@ const styles = StyleSheet.create({
     alignItems: 'center', position: 'relative',
   },
   heroImageWrap: {
-    height: 240, position: 'relative', backgroundColor: COLORS.accentLight, overflow: 'hidden',
+    width: '100%', aspectRatio: 4 / 3, position: 'relative', backgroundColor: COLORS.accentLight, overflow: 'hidden',
   },
-  heroImage: { width: '100%', height: 240 },
+  heroImage: { width: '100%', height: '100%' },
   heroDotRow: {
     position: 'absolute', bottom: 10, left: 0, right: 0,
     flexDirection: 'row', justifyContent: 'center', gap: 4,

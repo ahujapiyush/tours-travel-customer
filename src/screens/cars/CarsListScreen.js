@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
     marginBottom: 14, overflow: 'hidden', borderWidth: 1, borderColor: COLORS.divider,
   },
   carImageWrap: {
-    height: 110, backgroundColor: COLORS.accentLight, justifyContent: 'center',
+    aspectRatio: 4 / 3, backgroundColor: COLORS.accentLight, justifyContent: 'center',
     alignItems: 'center', position: 'relative',
   },
   carImage: { width: '100%', height: '100%' },
